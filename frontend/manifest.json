@@ -1,0 +1,14 @@
+{
+  "name": "Cortex AI — Personal Money-Balancing System",
+  "short_name": "Cortex AI",
+  "description": "Personal money-balancing & financial decision-support system: understand what to do with your remaining money after essential expenses.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080B21",
+  "theme_color": "#141B3F",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

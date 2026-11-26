@@ -1,0 +1,326 @@
+%% Cortex AI — Entity Relationship Diagram (Mermaid)
+%% Render: https://mermaid.live  | VS Code 'Markdown Preview Mermaid Support' | GitHub (paste inside a ```mermaid fence)
+%% Generated from the live cortex_ai schema. PK = primary key, FK = foreign key, UK = unique.
+%% Relationship legend:  ||--o{ one-to-many   ||--|| one-to-one   |o--o{ one-to-many with an OPTIONAL parent (nullable FK)
+%% [PHASE-2] tables (goal_contributions, transactions) are not used by today's frontend.
+erDiagram
+
+  %% ===== REFERENCE / LOOKUP DATA =====
+  schema_migrations {
+    VARCHAR version PK
+    VARCHAR description
+    TIMESTAMP applied_at
+  }
+  expense_category_groups {
+    TINYINT group_id PK
+    VARCHAR name UK
+    TINYINT sort_order
+  }
+  income_categories {
+    SMALLINT income_category_id PK
+    VARCHAR code UK
+    VARCHAR name UK
+    ENUM applies_to
+    TINYINT sort_order
+    TINYINT is_active
+  }
+  expense_categories {
+    INT category_id PK
+    BIGINT user_id FK
+    VARCHAR code UK
+    VARCHAR name
+    ENUM nature
+    TINYINT is_active
+    BIGINT owner_scope
+    TIMESTAMP created_at
+  }
+  role_expense_categories {
+    ENUM role PK
+    INT category_id PK, FK
+    TINYINT group_id FK
+    TINYINT sort_order
+  }
+  goal_types {
+    TINYINT goal_type_id PK
+    VARCHAR code UK
+    VARCHAR name
+    VARCHAR icon
+    TINYINT sort_order
+  }
+  interest_options {
+    SMALLINT interest_id PK
+    ENUM kind
+    VARCHAR name
+    TINYINT sort_order
+  }
+  allocation_buckets {
+    TINYINT bucket_id PK
+    VARCHAR code UK
+    VARCHAR name
+    VARCHAR description
+    CHAR color_hex
+    ENUM bucket_group
+    TINYINT sort_order
+  }
+  strategies {
+    TINYINT strategy_id PK
+    VARCHAR code UK
+    VARCHAR name
+    VARCHAR description
+  }
+  strategy_bucket_weights {
+    TINYINT strategy_id PK, FK
+    TINYINT bucket_id PK, FK
+    DECIMAL weight_pct
+  }
+  strategy_rationales {
+    TINYINT strategy_id PK, FK
+    TINYINT sort_order PK
+    VARCHAR rationale
+  }
+  next_month_actions {
+    TINYINT action_id PK
+    VARCHAR code UK
+    VARCHAR title
+    VARCHAR badge
+    VARCHAR description
+  }
+  next_month_action_tweaks {
+    TINYINT action_id PK, FK
+    TINYINT bucket_id PK, FK
+    DECIMAL tweak_pct
+  }
+
+  %% ===== USERS & SECURITY =====
+  users {
+    BIGINT user_id PK
+    CHAR public_id UK
+    VARCHAR email UK
+    VARCHAR password_hash
+    VARCHAR full_name
+    ENUM role
+    ENUM status
+    TINYINT is_demo
+    TIMESTAMP email_verified_at
+    TINYINT failed_login_count
+    TIMESTAMP locked_until
+    TIMESTAMP last_login_at
+    TIMESTAMP deletion_requested_at
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  user_profiles {
+    BIGINT user_id PK, FK
+    ENUM risk_preference
+    TINYINT lifestyle_pct
+    TINYINT preferred_strategy_id FK
+    TIMESTAMP updated_at
+  }
+  user_preferences {
+    BIGINT user_id PK, FK
+    ENUM theme_mode
+    ENUM accent
+    ENUM font_size
+    ENUM card_style
+    ENUM text_contrast
+    TINYINT high_contrast
+    TINYINT sparks
+    TINYINT glow
+    TINYINT reduce_motion
+    TIMESTAMP updated_at
+  }
+  user_interests {
+    BIGINT user_id PK, FK
+    SMALLINT interest_id PK, FK
+  }
+  user_sessions {
+    BIGINT session_id PK
+    BIGINT user_id FK
+    CHAR refresh_token_hash UK
+    VARCHAR user_agent
+    VARCHAR ip_address
+    TIMESTAMP created_at
+    TIMESTAMP expires_at
+    TIMESTAMP revoked_at
+  }
+  password_reset_tokens {
+    BIGINT token_id PK
+    BIGINT user_id FK
+    CHAR token_hash UK
+    TIMESTAMP created_at
+    TIMESTAMP expires_at
+    TIMESTAMP used_at
+  }
+  audit_logs {
+    BIGINT log_id PK
+    BIGINT user_id FK
+    VARCHAR action
+    VARCHAR entity_type
+    BIGINT entity_id
+    JSON details
+    VARCHAR ip_address
+    TIMESTAMP created_at
+  }
+
+  %% ===== MONTHLY BUDGET, GOALS, LEDGER =====
+  monthly_budgets {
+    BIGINT budget_id PK
+    BIGINT user_id FK
+    DATE budget_month
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  income_entries {
+    BIGINT entry_id PK
+    BIGINT budget_id FK
+    SMALLINT income_category_id FK
+    DECIMAL amount
+  }
+  expense_entries {
+    BIGINT entry_id PK
+    BIGINT budget_id FK
+    INT category_id FK
+    DECIMAL amount
+    TINYINT is_flexible
+    TINYINT due_day
+  }
+  financial_goals {
+    BIGINT goal_id PK
+    BIGINT user_id FK
+    TINYINT goal_type_id FK
+    DECIMAL target_amount
+    DATE deadline
+    TINYINT priority
+    ENUM status
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  goal_contributions {
+    BIGINT contribution_id PK
+    BIGINT goal_id FK
+    DECIMAL amount
+    DATE contributed_on
+    VARCHAR note
+    TIMESTAMP created_at
+  }
+  transactions {
+    BIGINT txn_id PK
+    BIGINT user_id FK
+    ENUM txn_type
+    SMALLINT income_category_id FK
+    INT category_id FK
+    DECIMAL amount
+    DATE txn_date
+    VARCHAR description
+    TIMESTAMP created_at
+  }
+
+  %% ===== RECOMMENDATIONS & PLANS =====
+  recommendations {
+    BIGINT recommendation_id PK
+    BIGINT user_id FK
+    BIGINT budget_id FK
+    TINYINT strategy_id FK
+    ENUM risk_preference
+    TINYINT lifestyle_pct
+    DECIMAL remaining_money
+    JSON input_snapshot
+    VARCHAR engine_version
+    ENUM status
+    TIMESTAMP created_at
+    TIMESTAMP applied_at
+  }
+  recommendation_allocations {
+    BIGINT recommendation_id PK, FK
+    TINYINT bucket_id PK, FK
+    DECIMAL weight_pct
+    DECIMAL amount
+  }
+  recommendation_factors {
+    BIGINT recommendation_id PK, FK
+    ENUM factor PK
+    DECIMAL weight_pct
+  }
+  recommendation_insights {
+    BIGINT insight_id PK
+    BIGINT recommendation_id FK
+    ENUM insight_type
+    VARCHAR title
+    VARCHAR body
+  }
+  monthly_plans {
+    BIGINT plan_id PK
+    BIGINT user_id FK
+    BIGINT budget_id FK
+    BIGINT recommendation_id FK
+    TINYINT strategy_id FK
+    TINYINT next_month_action_id FK
+    DATE plan_month
+    DECIMAL remaining_money
+    ENUM risk_preference
+    TINYINT lifestyle_pct
+    TINYINT is_customized
+    ENUM status
+    TIMESTAMP locked_at
+    TIMESTAMP created_at
+    TIMESTAMP updated_at
+  }
+  plan_allocations {
+    BIGINT plan_id PK, FK
+    TINYINT bucket_id PK, FK
+    DECIMAL baseline_pct
+    DECIMAL adjustment_pct
+    DECIMAL allocated_amount
+    ENUM priority
+  }
+  allocation_valuations {
+    BIGINT plan_id PK, FK
+    TINYINT bucket_id PK, FK
+    DECIMAL opening_value
+    DECIMAL closing_value
+    DATE valued_on
+  }
+
+  %% ===== RELATIONSHIPS (parent ||--o{ child : foreign-key column) =====
+  plan_allocations ||--o| allocation_valuations : "plan_id+bucket_id"
+  users |o--o{ audit_logs : "user_id"
+  users |o--o{ expense_categories : "user_id"
+  monthly_budgets ||--o{ expense_entries : "budget_id"
+  expense_categories ||--o{ expense_entries : "category_id"
+  goal_types ||--o{ financial_goals : "goal_type_id"
+  users ||--o{ financial_goals : "user_id"
+  financial_goals ||--o{ goal_contributions : "goal_id"
+  monthly_budgets ||--o{ income_entries : "budget_id"
+  income_categories ||--o{ income_entries : "income_category_id"
+  users ||--o{ monthly_budgets : "user_id"
+  next_month_actions |o--o{ monthly_plans : "next_month_action_id"
+  monthly_budgets |o--o{ monthly_plans : "budget_id"
+  recommendations |o--o{ monthly_plans : "recommendation_id"
+  strategies ||--o{ monthly_plans : "strategy_id"
+  users ||--o{ monthly_plans : "user_id"
+  next_month_actions ||--o{ next_month_action_tweaks : "action_id"
+  allocation_buckets ||--o{ next_month_action_tweaks : "bucket_id"
+  users ||--o{ password_reset_tokens : "user_id"
+  allocation_buckets ||--o{ plan_allocations : "bucket_id"
+  monthly_plans ||--o{ plan_allocations : "plan_id"
+  allocation_buckets ||--o{ recommendation_allocations : "bucket_id"
+  recommendations ||--o{ recommendation_allocations : "recommendation_id"
+  recommendations ||--o{ recommendation_factors : "recommendation_id"
+  recommendations ||--o{ recommendation_insights : "recommendation_id"
+  monthly_budgets |o--o{ recommendations : "budget_id"
+  strategies ||--o{ recommendations : "strategy_id"
+  users ||--o{ recommendations : "user_id"
+  expense_categories ||--o{ role_expense_categories : "category_id"
+  expense_category_groups ||--o{ role_expense_categories : "group_id"
+  allocation_buckets ||--o{ strategy_bucket_weights : "bucket_id"
+  strategies ||--o{ strategy_bucket_weights : "strategy_id"
+  strategies ||--o{ strategy_rationales : "strategy_id"
+  expense_categories |o--o{ transactions : "category_id"
+  income_categories |o--o{ transactions : "income_category_id"
+  users ||--o{ transactions : "user_id"
+  interest_options ||--o{ user_interests : "interest_id"
+  users ||--o{ user_interests : "user_id"
+  users ||--|| user_preferences : "user_id"
+  strategies ||--o{ user_profiles : "preferred_strategy_id"
+  users ||--|| user_profiles : "user_id"
+  users ||--o{ user_sessions : "user_id"
